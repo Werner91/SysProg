@@ -2,3 +2,8 @@
 *.dep
 *.a
 *.swp
+.gitignore
+.cproject
+Makefile
+.settings
+.project
