@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 
 
 	if(bind(sockfd, (struct sockaddr *) &serverAddr, sizeof(serverAddr)) <0){
-		error("Fehler");
+		error("FEHLER beim binding");
 	}
 
 	listen(sockfd, 5);
