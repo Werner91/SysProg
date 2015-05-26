@@ -1,6 +1,7 @@
 /*
  * Systemprogrammierung
  * Multiplayer-Quiz
+ * Achim Strohm, Werner Steinbinder, Michael Stroh
  *
  * Client
  * 
