@@ -41,8 +41,14 @@ int main(int argc, char **argv)
 	sockfd = socket(AF_INET, SOCK_STREAM, 0); // Socket anlegen, Rueckgabe ist der Filedeskriptor
 
 	if (sockfd < 0) {
-		error("Fehler bei der Socket-Erzeugung");
+		error("ERROR: Socket-Erzeugung client/main.c\n");
 	}
+
+	server = gethostbyname(argv[1]); // argv[1] Name des Hosts
+	    if (server == NULL) {
+	        fprintf(stderr,"ERROR: Host nicht verfuegbar client/main.c\n");
+	        exit(0);
+	    }
 
 	/* Initialisierung: Verbindungsaufbau, Threads starten usw... */
 
