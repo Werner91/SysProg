@@ -9,9 +9,11 @@
 
 #include "common/util.h"
 #include "gui/gui_interface.h"
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 
 void error(char *msg)
 {
@@ -33,7 +35,7 @@ int main(int argc, char **argv)
 	char buffer[256]; // Pufferspeicher fuer eingelesene Nachricht
 
 	if (argc < 3) {
-	       fprintf(stderr,"usage %s hostname port\n", argv[0]);
+	       //fprintf(stderr,"usage %s hostname port\n", argv[0]);
 	       exit(0);
 	    }
 
