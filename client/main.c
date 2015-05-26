@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 	infoPrint("Client Gruppe 4 (Stroh, Steinbinder, Strohm)");
 
 	int sockfd, portno, n; // Anlegen SocketFileDeskriptor, Portnummer
-	struct sockaddr_in serv_addr; // IP-Address-Struktur
+	struct sockaddr_in serv_addr; // IP-Adress-Struktur
 	struct hostent *server; // Struktur fuer
 	char buffer[256]; // Pufferspeicher fuer eingelesene Nachricht
 
@@ -53,15 +53,15 @@ int main(int argc, char **argv) {
 
 	// Server Adresse setzen
 	bzero((char *) &serv_addr, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_family = AF_INET; // IP Version 4
 	bcopy((char *) server->h_addr,
 	(char *)&serv_addr.sin_addr.s_addr,
-	server->h_length);
-	serv_addr.sin_port = htons(portno);
+	server->h_length); // Laenge der IP-Adresse
+	serv_addr.sin_port = htons(portno); // Port setzen
 
 	// Verbindung pruefen
 	if (connect(sockfd, &serv_addr, sizeof(serv_addr)) < 0) {
-		error("ERROR connecting");
+		error("ERROR: Fehler beim Verbindungsaufbau client/main.c\n");
 	}
 
 	// Eigentlich zu uebertragende Nachricht
@@ -70,12 +70,12 @@ int main(int argc, char **argv) {
 	fgets(buffer, 255, stdin);
 	n = write(sockfd, buffer, strlen(buffer));
 	if (n < 0){
-		error("ERROR writing to socket");
+		error("ERROR: Fehler bei Nachrichtenuebertragung client/main.c\n");
 	}
 	bzero(buffer, 256);
 	n = read(sockfd, buffer, 255);
 	if (n < 0){
-		error("ERROR reading from socket");
+		error("ERROR: Fehler beim Lesevorgang client/main.c\n");
 	}
 	printf("%s\n", buffer);
 
