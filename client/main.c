@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	char buffer[256]; // Pufferspeicher fuer eingelesene Nachricht
 
 	if (argc < 3) {
-	       //fprintf(stderr,"usage %s hostname port\n", argv[0]);
+	       fprintf(stderr,"usage %s hostname port\n", argv[0]);
 	       exit(0);
 	    }
 
