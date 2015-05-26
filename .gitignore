@@ -2,7 +2,6 @@
 *.dep
 *.a
 *.swp
-.gitignore
 .cproject
 .settings
 .project
