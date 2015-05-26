@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 	debugEnable();
 
 	guiInit(&argc, &argv);
-	infoPrint("Client Gruppe xy");
+	infoPrint("Client Gruppe 4 (Stroh, Steinbinder, Strohm)");
 
 	/* Initialisierung: Verbindungsaufbau, Threads starten usw... */
 

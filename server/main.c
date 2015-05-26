@@ -14,7 +14,8 @@ int main(int argc, char **argv)
 	setProgName(argv[0]);
 	/* debugEnable() */
 
-	infoPrint("Server Gruppe xy");
+	infoPrint("Server Gruppe 4 (Stroh, Steinbinder, Strohm)jnmhjhjhjjh");
+
 
 	return 0;
 }
