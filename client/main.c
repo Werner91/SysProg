@@ -90,6 +90,8 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
+/* Vordefinierte Funktionen fuer entsprechende Events */
+
 void preparation_onCatalogChanged(const char *newSelection) {
 	debugPrint("Katalogauswahl: %s", newSelection);
 }
