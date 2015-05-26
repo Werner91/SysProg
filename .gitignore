@@ -4,6 +4,5 @@
 *.swp
 .gitignore
 .cproject
-Makefile
 .settings
 .project
