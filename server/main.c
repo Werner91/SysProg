@@ -10,10 +10,18 @@
 
 #include "common/util.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <getopt.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include <sys/select.h>
+#include <signal.h>
 
 void error(char *msg) { //wird aufgerufen, wenn ein Systemcall fehlschlägt
 	perror(msg);
@@ -33,6 +41,55 @@ void show_help() {
 	printf("       ./server -p 8111\n");
 }
 
+
+/**************Singleton Pattern************************/
+//#define LOCKFILE "/tmp/serverGroup04"
+
+#define LOCKFILE "serverGroup04"
+
+static int singleton(const char *lockfile){
+
+	int file = open(lockfile, O_WRONLY | O_CREAT, 0644);
+	if(file < 0){
+		perror("PID-Datei konnte nicht erstellt werden");
+		return 1;
+	}
+
+	struct flock lock;
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 0;
+
+	//Vorbereeiteter lock setzten
+	if(fcntl(file, F_SETLK, &lock) < 0){
+		perror("PID Datei konnte nicht gelockt werden");
+		return 2;
+	}
+
+	//Prüfen ob Datei leer ist
+	if(ftruncate(file,0) < 0){
+		perror("ftruncate");
+		return 3;
+	}
+
+	//Schreibe die Prozess ID (PID) des Servers in die Datei
+	char s[32];
+	snprintf(s, sizeof(s), "%d\n", (int)getpid());
+
+	if(write(file,s,strlen(s)) < strlen(s)){
+		perror("write");
+	}
+
+	if(fsync(file) < 0){
+		perror("fsync");
+	}
+
+	return 0;
+}
+
+/**************Singleton Pattern Ende************************/
+
 int main(int argc, char **argv) {
 
 	const char* short_options = "h:p:";
@@ -43,6 +100,22 @@ int main(int argc, char **argv) {
 	struct sockaddr_in serverAddr, clientAddr; //Struktur enthält die Internet-Adresse des Servers und des Clients
 
 	char *standardPort = "8111";
+
+
+	//PID Datei erzeugen
+	if(singleton(LOCKFILE) != 0){
+		return 1;
+	}
+
+
+
+
+
+
+
+
+
+
 
 	/**************Verarbeitung Parameter aus der Konsole******************/
 	struct option long_options[] = { //hier sind die langen Optionen wie z.b. --help gespeichert
