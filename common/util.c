@@ -19,6 +19,22 @@ static const char *prog_name = "<unknown>";	/**< Aufrufname des Programms (argv[
 static int debug_enabled = 0;			/**< Debug-Ausgaben eingeschaltet? */
 
 
+
+
+
+
+int isOnlyNumber(const char* s) {
+    while(*s != '\0') {
+        if ((*s < '0') || (*s > '9')) {
+            return 0;
+        }
+        s++;
+    }
+    return 1;
+}
+
+
+
 /**
  * \brief	Einen FILE-Stream für andere Threads blockieren und Thread-Abbruch
  *		verhindern.
