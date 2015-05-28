@@ -113,15 +113,13 @@ int main(int argc, char **argv) {
 		case 'n':
 				printf("LÄUFT --name\n\n");
 				userNameIsSet = 1;
-
-				//Wenn der gesetzte Name zu lang ist
+				name = optarg;
 				if(strlen(name)>31){
-					printf("Der gewaehlte Name ist zu lang! Der Name wird auf 31 Zeichen gekuerzt\n");
+					printf("Der gewaehlte Name ist zu lang! Max. 31 Zeichen erlaubt\n");
+					exit(0);
 				}
 
-				if (optarg){
-				 strncpy(name, optarg, 31);
-				}
+
 				break;
 		case 'i':
 				printf("LÄUFT --ipadresse\n\n");
@@ -154,7 +152,7 @@ int main(int argc, char **argv) {
 		error("ERROR: Socket-Erzeugung client/main.c\n");
 	}
 
-	server = gethostbyname(argv[1]); // argv[1] Name des Hosts
+
 	if (server == NULL) {
 		fprintf(stderr, "ERROR: Host nicht verfuegbar client/main.c\n");
 		exit(0);
