@@ -18,6 +18,9 @@
 #  define  __attribute__(x)  /* leer */
 #endif
 
+int isOnlyNumber(const char* s);
+
+
 void setProgName(const char *argv0);
 const char *getProgName(void);
 

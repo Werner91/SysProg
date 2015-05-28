@@ -15,11 +15,29 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <getopt.h>
+#include <math.h>
+
+
 
 void error(char *msg) {
 	perror(msg);
 	exit(0);
 }
+
+void show_help(){
+	printf("Bitte geben sie Folgende Startparameter an:\n");
+	printf("Angaben in [] sind optional\n\n");
+	printf("	   -n  --name 		--> Spielername\n");
+	printf("	  [-p] --port		--> Welcher Port verwendet werden soll\n");
+	printf("	  [-h] --hilfe 		--> zeigt diese Hilfemeldung an\n");
+	printf("	  [-i] --ipadresse	--> Welche IP Adresse verwendet werden soll");
+	printf("\nBeispiel: ./Client -n Spielername -p 54321\n");
+	printf("Beispiel: ./Client --name Spieldername --port 54321\n");
+	printf("Ohne Paramter -p wird der Standartport 8111 verwendet\n\n\n");
+}
+
+
 
 int main(int argc, char **argv) {
 	setProgName(argv[0]);
@@ -32,11 +50,92 @@ int main(int argc, char **argv) {
 	struct sockaddr_in serv_addr; // IP-Adress-Struktur
 	struct hostent *server; // Struktur fuer
 	char buffer[256]; // Pufferspeicher fuer eingelesene Nachricht
+	int c; //Parameter für getopt
+	int long_index = 0; //Parameter für getopt
 
+	char *name = "unknown";
+	char *ipadresse = "localhost";
+	char *port = "8111";
+
+
+	/*
+	 * Wird verwendet um kurze (getopt) Paramter (-n) oder auch lange Paramter (--name) auszuwerten
+	 */
+		const char* short_options = "h:p:n:i:";
+		static struct option long_options[] = {
+			{"hilfe", no_argument, 0, 'h'},
+			{"port", optional_argument, 0, 'p'},
+			{"name", required_argument, 0, 'n'},
+			{"ipadresse", optional_argument, 0, 'i'},
+			{0, 0, 0, 0}
+		};
+
+
+
+
+
+	if(argc <=1){
+		printf("Es wurden keine Paramter angegeben.\n");
+		show_help();
+		exit(0);
+	}
+	printf("Test --> Anzahl der Paramter:%d \n\n", argc);
+	printf("Test --> Gefundene Paramter:\n");
+
+	while(1){
+
+
+		//Argumente auslesen mit hilfe von getopt.h
+		c = getopt_long(argc, argv, short_options, long_options, &long_index);
+		if(c == -1){ //Ende der Argumentzeile erreicht?
+			break;
+		}
+
+		switch(c){
+		case 'h':
+				printf("LÄUFT --help\n\n");
+				show_help();
+				exit(1);
+				break;
+		case 'p':
+
+			    if (isOnlyNumber(optarg)) {
+			    	printf("LÄUFT --port\n\n");
+			    	port = optarg;
+			    } else {
+			        errorPrint("\nPortnummer darf nur aus Zahlen bestehen!\n");
+			        exit(1);
+			    }
+				break;
+		case 'n':
+				printf("LÄUFT --name\n\n");
+				if (optarg){
+				 strncpy(name, optarg, 31);
+				}
+				break;
+		case 'i':
+				printf("LÄUFT --ipadresse\n\n");
+				ipadresse = optarg;
+				break;
+		default:
+			printf ("\nUngueltiger Parameter\n\n");
+			break;
+		}
+
+	}
+
+
+	printf("name:%s\n",name);
+	printf("IP:%s\n",ipadresse);
+	printf("Port:%s\n",port);
+
+
+	/*
 	if (argc < 3) {
 		fprintf(stderr, "usage %s hostname port\n", argv[0]);
 		exit(0);
 	}
+	*/
 
 	portno = atoi(argv[2]); // Portnummer
 	sockfd = socket(AF_INET, SOCK_STREAM, 0); // Socket anlegen, Rueckgabe ist der Filedeskriptor
