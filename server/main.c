@@ -23,6 +23,8 @@
 #include <sys/select.h>
 #include <signal.h>
 
+#include "common/rfc.h"
+
 void error(char *msg) { //wird aufgerufen, wenn ein Systemcall fehlschlägt
 	perror(msg);
 	exit(1);
@@ -37,20 +39,18 @@ void show_help() {
 	printf("Examples:\n");
 	printf("       ./server --help\n");
 	printf("       ./server --h\n");
-	printf("       ./server --port 8111\n");
-	printf("       ./server -p 8111\n");
+	printf("       ./server --port 54321\n");
+	printf("       ./server -p 54321\n");
 }
-
 
 /**************Singleton Pattern************************/
 //#define LOCKFILE "/tmp/serverGroup04"
-
 #define LOCKFILE "serverGroup04"
 
-static int singleton(const char *lockfile){
+static int singleton(const char *lockfile) {
 
 	int file = open(lockfile, O_WRONLY | O_CREAT, 0644);
-	if(file < 0){
+	if (file < 0) {
 		perror("PID-Datei konnte nicht erstellt werden");
 		return 1;
 	}
@@ -62,26 +62,26 @@ static int singleton(const char *lockfile){
 	lock.l_len = 0;
 
 	//Vorbereeiteter lock setzten
-	if(fcntl(file, F_SETLK, &lock) < 0){
+	if (fcntl(file, F_SETLK, &lock) < 0) {
 		perror("PID Datei konnte nicht gelockt werden");
 		return 2;
 	}
 
 	//Prüfen ob Datei leer ist
-	if(ftruncate(file,0) < 0){
+	if (ftruncate(file, 0) < 0) {
 		perror("ftruncate");
 		return 3;
 	}
 
 	//Schreibe die Prozess ID (PID) des Servers in die Datei
 	char s[32];
-	snprintf(s, sizeof(s), "%d\n", (int)getpid());
+	snprintf(s, sizeof(s), "%d\n", (int) getpid());
 
-	if(write(file,s,strlen(s)) < strlen(s)){
+	if (write(file, s, strlen(s)) < strlen(s)) {
 		perror("write");
 	}
 
-	if(fsync(file) < 0){
+	if (fsync(file) < 0) {
 		perror("fsync");
 	}
 
@@ -99,23 +99,15 @@ int main(int argc, char **argv) {
 	char buffer[256]; //gelesene Character werden hier gespeichert (also die Nachricht)
 	struct sockaddr_in serverAddr, clientAddr; //Struktur enthält die Internet-Adresse des Servers und des Clients
 
-	char *standardPort = "8111";
+	char *standardPort = "54321";
 
+	// Variable um Anzahl angemeldeter Spieler zu tracken
+	int playerCount = 0;
 
 	//PID Datei erzeugen
-	if(singleton(LOCKFILE) != 0){
+	if (singleton(LOCKFILE) != 0) {
 		return 1;
 	}
-
-
-
-
-
-
-
-
-
-
 
 	/**************Verarbeitung Parameter aus der Konsole******************/
 	struct option long_options[] = { //hier sind die langen Optionen wie z.b. --help gespeichert
@@ -197,11 +189,42 @@ int main(int argc, char **argv) {
 		error("FEHLER bei accept");
 	}
 
+	// Warten auf LoginRequests
+	rfc lrq;
+	int receive = receiveMessage(sockfd, &lrq);
+	if (receive == -1) {
+		error("ERROR: Fehler beim Empfang eines LoginRequests server/main.c");
+		return 1;
+	} else if (receive == 0) {
+		error("ERROR: Verbindung fehlgeschlagen LoginRequest  server/main.c");
+		return 1;
+	}
 
+	if (typeControl(lrq.base, 2)) {
+		if (lrq.lrq.rfcVersion != RFC_VERSION) {
+			error("ERROR: Falsche RFC Version");
+			return (1);
+		}
 
+		int length = ntohs(lrq.base.length) - 1;
+		char s[length + 1];
+		s[length] = '\0';
+		memcpy(s, lrq.lrq.loginName, length);
 
+		printf("Spielername lautet %s\n", s);
 
+		struct rfcLoginResponseOk lok;
+		lok.base.type = 2;
+		lok.base.length = htons(2);
+		lok.clientID = (uint8_t) 1;
+		lok.rfcVersion = 7;
 
+		if (send(sockfd, &lok, RFC_LOK_SIZE, 0) == -1) {
+		            errnoPrint("send");
+		            return 1;
+		        }
+
+	}
 
 	bzero(buffer, 256);
 

@@ -51,8 +51,8 @@ int receiveMessage(int socket, rfc *packet) {
 // KontrollFunktion fuer das Type-Feld des jeweiligen Datenpakets
 // Rueckgabe 1 bei Uebereinstimmung des Type-Felds
 // Rueckgabe 0 bei falschem Type-Feld
-int typeControl(struct rfcBase base, uint8_t* type) {
-	if (base.type == *type) {
+int typeControl(struct rfcBase base, uint8_t type) {
+	if (base.type == type) {
 		return 1;
 	} else {
 		return 0;

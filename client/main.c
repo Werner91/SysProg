@@ -17,7 +17,7 @@
 #include <netdb.h>
 #include <getopt.h>
 #include <math.h>
-#include "rfc.h"
+#include "common/rfc.h"
 
 
 
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 	//Ueberprüfen ob ein Username gesetzt wurde ansonsten Hilfe ausgeben
 	if(userNameIsSet == 0){
 		printf("Es wurde kein Name angegeben");
-		shoe_help();
+		show_help();
 		exit(0);
 	}
 
@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
 	struct rfcLoginRequest lrq;
 	lrq.base.length = htons(strlen(name)+1);
 	lrq.base.type = 1;
-	lrq.loginName = name;
+	memcpy(lrq.loginName, name, strlen(name));
 	lrq.rfcVersion = RFC_VERSION;
 	printf("Login gesendet\n");
 
@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
 
 
 	 //RFC Versions ueberprüfung
-	 if(typeControl(&lok, 2)){
+	 if(typeControl(lok.base, 2)){
 		 if(lok.lok.rfcVersion != RFC_VERSION){
 			 error("ERROR: Falsche RFC Version");
 			 return (1);
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
 		 infoPrint("Ihre ClientID: %d", clientID);
 		 preparation_addPlayer(name); //Name wird der GUI hinzugefügt
 		 if(lok.lok.clientID == 0){
-			 prepataion_setMode(PREPARATION_MODE_PRIVILEGED);
+			 preparation_setMode(PREPARATION_MODE_PRIVILEGED);
 		 }else{
 			 preparation_setMode(PREPARATION_MODE_NORMAL);
 		 }

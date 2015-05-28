@@ -66,6 +66,6 @@ typedef union {
 int receiveMessage(int socket, rfc *packet);
 
 // KontrollFunktion fuer das Type-Feld des jeweiligen Datenpakets
-int typeControl(struct rfcBase base, uint8_t* type);
+int typeControl(struct rfcBase base, uint8_t type);
 
 #endif
