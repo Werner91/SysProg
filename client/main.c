@@ -17,6 +17,7 @@
 #include <netdb.h>
 #include <getopt.h>
 #include <math.h>
+#include "rfc.h"
 
 
 
@@ -55,7 +56,9 @@ int main(int argc, char **argv) {
 
 	char *name = "unknown";
 	char *ipadresse = "localhost";
-	char *port = "8111";
+	char *port = "54321";
+	int userNameIsSet = 0;
+	int clientID;
 
 
 	/*
@@ -109,6 +112,13 @@ int main(int argc, char **argv) {
 				break;
 		case 'n':
 				printf("LÄUFT --name\n\n");
+				userNameIsSet = 1;
+
+				//Wenn der gesetzte Name zu lang ist
+				if(strlen(name)>31){
+					printf("Der gewaehlte Name ist zu lang! Der Name wird auf 31 Zeichen gekuerzt\n");
+				}
+
 				if (optarg){
 				 strncpy(name, optarg, 31);
 				}
@@ -129,15 +139,15 @@ int main(int argc, char **argv) {
 	printf("IP:%s\n",ipadresse);
 	printf("Port:%s\n",port);
 
-
-	/*
-	if (argc < 3) {
-		fprintf(stderr, "usage %s hostname port\n", argv[0]);
+	//Ueberprüfen ob ein Username gesetzt wurde ansonsten Hilfe ausgeben
+	if(userNameIsSet == 0){
+		printf("Es wurde kein Name angegeben");
+		shoe_help();
 		exit(0);
 	}
-	*/
 
-	portno = atoi(argv[2]); // Portnummer
+
+
 	sockfd = socket(AF_INET, SOCK_STREAM, 0); // Socket anlegen, Rueckgabe ist der Filedeskriptor
 
 	if (sockfd < 0) {
@@ -156,27 +166,70 @@ int main(int argc, char **argv) {
 	bcopy((char *) server->h_addr,
 	(char *)&serv_addr.sin_addr.s_addr,
 	server->h_length); // Laenge der IP-Adresse
-	serv_addr.sin_port = htons(portno); // Port setzen
+	serv_addr.sin_port = htons(port); // Port setzen
+
+
 
 	// Verbindung pruefen
+	printf("Verbindung wird aufgebaut...\n");
 	if (connect(sockfd, &serv_addr, sizeof(serv_addr)) < 0) {
 		error("ERROR: Fehler beim Verbindungsaufbau client/main.c\n");
 	}
+	printf("Verbindung wurde aufgebaut\n");
 
-	// Eigentlich zu uebertragende Nachricht
-	printf("Please enter the message: ");
-	bzero(buffer, 256);
-	fgets(buffer, 255, stdin);
-	n = write(sockfd, buffer, strlen(buffer));
-	if (n < 0){
-		error("ERROR: Fehler bei Nachrichtenuebertragung client/main.c\n");
+
+
+	//Uebertragung LoginRequest
+	struct rfcLoginRequest lrq;
+	lrq.base.length = htons(strlen(name)+1);
+	lrq.base.type = 1;
+	lrq.loginName = name;
+	lrq.rfcVersion = RFC_VERSION;
+	printf("Login gesendet\n");
+
+
+
+	//An den Server senden
+	if(send(sockfd, &lrq, RFC_LRQ_SIZE + strlen(name),0) == -1){
+		error("ERROR: Fehler bei Nachrichten uebertragung client/main.c\n");
+		return(1);
 	}
-	bzero(buffer, 256);
-	n = read(sockfd, buffer, 255);
-	if (n < 0){
-		error("ERROR: Fehler beim Lesevorgang client/main.c\n");
-	}
-	printf("%s\n", buffer);
+
+
+	//Antwort vom Server
+	rfc lok;
+	int receive = receiveMessage(sockfd, &lok);
+
+	 if (receive == -1) {
+		 printf("Verbindung verloren client/main.c\n");
+	        return 1;
+	 } else if (receive == 0) {
+	        errorPrint("Uebertragung fehlgeschlagen \n");
+	        return 1;
+	 }
+
+
+	 //RFC Versions ueberprüfung
+	 if(typeControl(&lok, 2)){
+		 if(lok.lok.rfcVersion != RFC_VERSION){
+			 error("ERROR: Falsche RFC Version");
+			 return (1);
+		 }
+
+		 // Speichere zugewiesene clientID
+		 clientID = lok.lok.clientID;
+		 infoPrint("Ihre ClientID: %d", clientID);
+		 preparation_addPlayer(name); //Name wird der GUI hinzugefügt
+		 if(lok.lok.clientID == 0){
+			 prepataion_setMode(PREPARATION_MODE_PRIVILEGED);
+		 }else{
+			 preparation_setMode(PREPARATION_MODE_NORMAL);
+		 }
+	 }
+
+
+
+
 
 	/* Initialisierung: Verbindungsaufbau, Threads starten usw... */
 
