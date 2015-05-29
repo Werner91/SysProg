@@ -206,6 +206,7 @@ int main(int argc, char **argv) {
 		// Speichere zugewiesene clientID
 		clientID = lok.lok.clientID;
 		infoPrint("Ihre ClientID: %d", clientID);
+		printf("Vor dem AddPlayer der GUI");
 		preparation_addPlayer(name); //Name wird der GUI hinzugefügt
 		if (lok.lok.clientID == 0) {
 			preparation_setMode(PREPARATION_MODE_PRIVILEGED);
