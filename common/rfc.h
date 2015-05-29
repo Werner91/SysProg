@@ -10,14 +10,27 @@
 
 #ifndef RFC_H
 #define RFC_H
-
 #include "common/question.h"
+
+
+// maximale Anzahl an Spielern
+#define MAX_PLAYERS	4
+
+// max. Laenge Spielername (inkl. '\0')
+#define PLAYER_NAME_LENGTH 32
 
 // Padding durch Compiler verhindern
 #pragma pack(push, 1)
 
 #define RFC_BASE_SIZE 3
 #define RFC_VERSION 7
+
+
+// Uebersicht über die Nachrichtentypen
+#define RFC_LOGINREQUEST         			1 // Anmeldung eines Clients am Server
+#define RFC_LOGINRESPONSEOK			2 // Anmeldung am Server erfolgreich
+#define RFC_PLAYERLIST							6 // Liste der Spielteilnehmer, wird versendet bei: An-/Abmeldung, Spielstart und Aenderung des Punktestandes
+
 
 // Basis-Struktur der RFC
 struct rfcBase {

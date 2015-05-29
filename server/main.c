@@ -22,8 +22,10 @@
 #include <fcntl.h>
 #include <sys/select.h>
 #include <signal.h>
+#include "common/util.h"
 
 #include "common/rfc.h"
+#include "user.h"
 
 void error(char *msg) { //wird aufgerufen, wenn ein Systemcall fehlschlägt
 	perror(msg);
@@ -98,7 +100,7 @@ int main(int argc, char **argv) {
 	int sockfd, newsockfd, portno, n;
 	//socklen_t cliLen;
 	struct sockaddr_in serverAddr; //clientAddr; //Struktur enthält die Internet-Adresse des Servers und des Clients
-
+	int port_ueberpruefung; // Den eingegebenen Port auf richtigkeit prüfen
 	const char *port = "54321";
 
 	// Variable um Anzahl angemeldeter Spieler zu tracken
@@ -137,10 +139,24 @@ int main(int argc, char **argv) {
 			break;
 
 		case 'p':
-			if (optarg) {
-				printf("  --port: %s\n", optarg);
-				port = optarg;
-			}
+			if (isOnlyNumber(optarg)) {
+							printf("LÄUFT --port\n\n");
+							port = optarg;
+						} else {
+							errorPrint("\nPortnummer darf nur aus Zahlen bestehen!\n");
+							exit(1);
+						}
+						port_ueberpruefung = atoi(optarg);
+						if((port_ueberpruefung < 65535) && (port_ueberpruefung > 4000)){
+							port = optarg;
+						}
+						else {
+							infoPrint("Port muss zwischen 4000 - 65535 sein!");
+							infoPrint("Es wird der Standardport 54321 verwendet");
+							port = "54321";
+						}
+
+
 			break;
 
 		case '?':
@@ -162,85 +178,81 @@ int main(int argc, char **argv) {
 
 	infoPrint("Server Gruppe 4 (Stroh, Steinbinder, Strohm)");
 
+
+	// Spielerverwaltung initialisieren
+		initSpielerverwaltung();
+
 	/*********************Verbindungsaufbau*************************************/
 
 	/*Neuen Socket erstellen*/
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		error("FEHLER beim öffnen des Sockets");
+		// SERVER BEENDEN FEHLT NOCH AN DIESER STELLE beendeServer()
+		exit(0);
 	}
 
-	/*Buffer löschen*/
-	bzero((char *) &serverAddr, sizeof(serverAddr)); //Server Adresse auf 0.0.0.0 setzen
+	// Struct fuer Socketadresse
+		struct sockaddr_in address;
 
-	portno = atoi(port); //String von der Konsole in Integer umwandeln
+		// Addresseigenschaften
+			// Erstellt Speicherplatz für Adresse und fuellt mit Nullen
+			memset(&address, 0, sizeof(address));
+			// IPv4 Adresse
+			address.sin_family = AF_INET;
+			// // konvertiere Werte von host byte order zu network byte order
+			int server_port = atoi(port);
+			address.sin_port = htons(server_port);
+			// Empfaengt von allen Interfaces
+			address.sin_addr.s_addr = INADDR_ANY;
 
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(portno); //Konvertiert Portnummer von host byte order in network byte order
-	serverAddr.sin_addr.s_addr = INADDR_ANY; //IP-Adresse auf dem der Server läuft wird eingefügt
+			// Socket an den Port binden
+			if (bind(sockfd, (struct sockaddr *) &address, sizeof(address)) == -1) {
+				errorPrint("bind error: Möglicherweise ist dieser Port (noch) in verwendung\n");
+				close(sockfd);
+				return -1;
+			}
+			// testweise Serverport ausgeben
+			infoPrint("Serverport: %s", port);
 
-	if (bind(sockfd, (struct sockaddr *) &serverAddr, sizeof(serverAddr)) < 0) {
-		error("FEHLER beim binding");
+
+	// starte Login-Thread
+	pthread_t login_thread;
+	printf("Versuche Login Thread zu erstelt...\n");
+	if(pthread_create(&login_thread, NULL, (void*)login_main(sockfd), NULL) == -1){
+			errorPrint("Login_thread konnte nicht erstellt werden!");
+			// SERVER BEENDEN FEHLT NOCH AN DIESER STELLE beendeServer()
+			exit(0);
+	}else{
+		printf("Login Thread wurde erstelt\n");
 	}
 
-	listen(sockfd, 5);
 
-	//cliLen = sizeof(clientAddr);
-	newsockfd = accept(sockfd, NULL, NULL);
-	if (newsockfd < 0) {
-		error("FEHLER bei accept");
-	}
 
-	// Warten auf LoginRequests
-	rfc lrq;
-	printf("Vor dem receive\n");
-	int receive = receiveMessage(newsockfd, &lrq);
-	printf("Nach dem receive I\n");
-	if (receive == -1) {
-		error("ERROR: Fehler beim Empfang eines LoginRequests server/main.c");
-		return 1;
-	} else if (receive == 0) {
-		error("ERROR: Verbindung fehlgeschlagen LoginRequest  server/main.c");
-		return 1;
-	}
-	printf("Laenge: %d\n", lrq.base.length);
-	printf("Typ: %d\n", lrq.base.type);
 
-	printf("Nach dem receive II\n");
 
-	if (typeControl(lrq.base, 1)) {
-		if (lrq.lrq.rfcVersion != RFC_VERSION) {
-			error("ERROR: Falsche RFC Version");
-			return (1);
-		}
-		printf("Versionskontrolle hat funktioniert\n");
 
-		int length = ntohs(lrq.base.length) - 1;
-		char s[length + 1];
-		s[length] = '\0';
-		memcpy(s, lrq.lrq.loginName, length);
 
-		printf("Spielername lautet %s\n", s);
 
-		struct rfcLoginResponseOk lok;
-		lok.base.type = 2;
-		lok.base.length = 2;
-		lok.clientID = 1;
-		lok.rfcVersion = 7;
-
+		/*
 		printf("Vor dem zweiten Send\n");
 		if (send(sockfd, &lok, RFC_LOK_SIZE, 0) == -1) {
 		            errnoPrint("send");
 		            return 1;
 		        }
 		printf("Nach dem zweiten Send\n");
+
+
 	}
 
+		 */
 
+
+/*
 	n = write(newsockfd, "Ich hab deine Nachricht erhalten!", 33);
 	if (n < 0) {
 		error("FEHLER beim schreiben auf den socket");
 	}
-
+*/
 	return 0;
 }

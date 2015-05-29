@@ -35,27 +35,97 @@ void show_help() {
 	printf("	  [-i] --ipadresse	--> Welche IP Adresse verwendet werden soll");
 	printf("\nBeispiel: ./Client -n Spielername -p 54321\n");
 	printf("Beispiel: ./Client --name Spieldername --port 54321\n");
-	printf("Ohne Paramter -p wird der Standartport 8111 verwendet\n\n\n");
+	printf("Ohne Paramter -p wird der Standartport 54321 verwendet\n\n\n");
+
 }
+
+/*****************************Verbindung herstellen ****************************************/
+int verbindung_herstellen(int _socketdeskriptor, char* _port, char* _ipadresse){
+
+	struct sockaddr_in serv_addr; // IP-Adress-Struktur
+	struct hostent *server;
+	int portno;
+	int fehler = 0;
+
+	portno = atoi(_port);
+	server = gethostbyname(_ipadresse);
+
+	if(server == NULL){
+		infoPrint("Host konnte nicht gefunden werden");
+		fehler = 1;
+	}else{
+
+	// Server Adresse setzen
+		bzero((char *) &serv_addr, sizeof(serv_addr));
+		// IPv4
+		serv_addr.sin_family = AF_INET;
+		bcopy(server->h_addr, &serv_addr.sin_addr, server->h_length);
+
+		// Port setzen
+		portno = atoi(_port);
+		serv_addr.sin_port = htons(portno);
+
+		// Verbindung pruefen
+		printf("Verbindung wird aufgebaut...\n");
+
+		//Ausagbe zur Fehlersuche
+		printf("Socket: %d\n", _socketdeskriptor);
+			printf("port: %s\n",_port );
+			printf("ipadresse: %s\n", _ipadresse);
+
+
+		if (connect(_socketdeskriptor, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
+			error("ERROR: Fehler beim Verbindungsaufbau client/main.c\n");
+			fehler = 1;
+		}
+	}
+	return fehler;
+}
+
+/***************************** login request senden****************************************/
+
+void sende_login_request(char* _name, int _socketDeskriptor){
+
+	// Uebertragung LoginRequest
+	// Paket vorbereiten
+	struct rfcLoginRequest lrq;
+	int nameLength = strlen(_name);
+	lrq.base.length = htons(nameLength + 1);
+	lrq.base.type = 1;
+	memcpy(lrq.loginName, _name, nameLength);
+	lrq.rfcVersion = RFC_VERSION;
+	printf("Laenge des LRQ: %d\n", lrq.base.length);
+	printf("Login gesendet\n");
+
+	// Eigentliche Uebertragung
+	if (send(_socketDeskriptor, &lrq, ntohs( RFC_LRQ_SIZE) + strlen(_name), 0) == -1) {
+		infoPrint("ERROR: Fehler bei beim uebertragen der LRQ Nachrichten an den Server\n");
+		exit (0);
+	}else{
+		infoPrint("LRQ Nachricht erfolgreich gesendet\n");
+	}
+
+}
+
+
+
+
 
 int main(int argc, char **argv) {
 	setProgName(argv[0]);
 	debugEnable();
 
 	guiInit(&argc, &argv);
-	infoPrint("Client Gruppe 4 (Stroh, Steinbinder, Strohm)");
+	infoPrint("Client Gruppe 4 (Stroh, Steinbinder, Strohm)\n");
 
 	int sockfd; // Anlegen SocketFileDeskriptor, Portnummer
-	struct sockaddr_in serv_addr; // IP-Adress-Struktur
-	struct hostent *server;
 	int c; //Parameter für getopt
 	int long_index = 0; //Parameter für getopt
 
 	char *name = "unknown";
-	char username[31];
-	username[31] = '\0';
 	char *ipadresse = "localhost";
 	char *port = "54321";
+	int port_ueberpruefung; // Um den eingegebenen Port auf richtigkeit zu prüfen
 	int userNameIsSet = 0;
 	int clientID;
 
@@ -98,15 +168,26 @@ int main(int argc, char **argv) {
 				errorPrint("\nPortnummer darf nur aus Zahlen bestehen!\n");
 				exit(1);
 			}
+			port_ueberpruefung = atoi(optarg);
+			if((port_ueberpruefung < 65535) && (port_ueberpruefung > 4000)){
+				port = optarg;
+			}
+			else {
+				infoPrint("Port muss zwischen 4000 - 65535 sein!");
+				infoPrint("Es wird der Standardport 54321 verwendet");
+				port = "54321";
+			}
+
 			break;
 		case 'n':
 			printf("LÄUFT --name\n\n");
+			name = optarg;
+			//strncpy(username, optarg, 31);
+			if((strlen(name))>=31){
+				infoPrint("Der gewaehlte Name ist zu lang! Max. 31 Zeichen erlaubt\n");
+				exit(1);
+			 }
 			userNameIsSet = 1;
-			strncpy(username, optarg, 31);
-			/*if((strlen(name))>31){
-			 printf("Der gewaehlte Name ist zu lang! Max. 31 Zeichen erlaubt\n");
-			 exit(0);
-			 }*/
 			break;
 		case 'i':
 			printf("LÄUFT --ipadresse\n\n");
@@ -125,7 +206,7 @@ int main(int argc, char **argv) {
 
 	// Ueberpruefen ob ein Username gesetzt wurde ansonsten Hilfe ausgeben
 	if (userNameIsSet == 0) {
-		printf("Es wurde kein Name angegeben");
+		printf("\nEs wurde kein Name angegeben\n\n");
 		show_help();
 		exit(0);
 	}
@@ -135,59 +216,46 @@ int main(int argc, char **argv) {
 
 	if (sockfd < 0) {
 		error("ERROR: Socket-Erzeugung client/main.c\n");
+		exit(0);
 	}
 
-	// Server Adresse setzen
-	bzero((char *) &serv_addr, sizeof(serv_addr));
-	server = gethostbyname(ipadresse);
-	bcopy((char*) server->h_addr, (char*) &serv_addr.sin_addr.s_addr, server->h_length);
-	// IPv4
-	serv_addr.sin_family = AF_INET;
-	// Port setzen
-	uint16_t final_port = atoi(port);
-	serv_addr.sin_port = htons(final_port);
 
-	// Verbindung pruefen
-	printf("Verbindung wird aufgebaut...\n");
-	if (connect(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
-		error("ERROR: Fehler beim Verbindungsaufbau client/main.c\n");
-	}
+	if(verbindung_herstellen(sockfd, port, ipadresse) == 0) {
+
 	printf("Verbindung wurde aufgebaut\n");
 
 	// GUI initialisieren
-	/*guiInit(&argc, &argv);
-	 preparation_setMode(PREPARATION_MODE_BUSY);
-	 preparation_showWindow();
-	 */
+	infoPrint("initialisiere GUI\n");
+	//guiInit(&argc, &argv);
 
-	// Uebertragung LoginRequest
-	// Paket vorbereiten
-	struct rfcLoginRequest lrq;
-	int nameLength = strlen(username);
-	lrq.base.length = htons(nameLength + 1);
-	lrq.base.type = 1;
-	memcpy(lrq.loginName, username, nameLength);
-	lrq.rfcVersion = RFC_VERSION;
-	printf("Laenge des LRQ: %d\n", lrq.base.length);
-	printf("Login gesendet\n");
+	//Erstellen des Login Request
+	infoPrint("sende LoginRequest");
+	sende_login_request(name, sockfd);
 
-	// Eigentliche Uebertragung
-	if (send(sockfd, &lrq, RFC_LRQ_SIZE + strlen(username), 0) == -1) {
-		error("ERROR: Fehler bei Nachrichten uebertragung client/main.c\n");
-		return (1);
-	}
+ 	preparation_setMode(PREPARATION_MODE_BUSY);
+	preparation_showWindow();
+
+
+
 
 	// BIS HIERHER LAEUFTS
 
+
+
+	/*
 	// Antwort vom Server
-	listen(sockfd, 5);
+	listen(sockfd, 128);
 	int newsockfd = accept(sockfd, NULL, NULL);
 	if (newsockfd < 0) {
 		error("FEHLER bei accept");
 	}
+	 */
+
+
 
 	rfc lok;
-	int receive = receiveMessage(newsockfd, &lok);
+	lok.lok.base.type = htons(2);
+	int receive = receiveMessage(sockfd, &lok);
 
 	if (receive == -1) {
 		printf("Verbindung verloren client/main.c\n");
@@ -198,7 +266,8 @@ int main(int argc, char **argv) {
 	}
 
 	// RFCVersionskontrolle
-	if (typeControl(lok.base, 2)) {
+	//if (typeControl(lok.base, 2))
+	if (typeControl(lok.lok.base, 2)) {
 		if (lok.lok.rfcVersion != RFC_VERSION) {
 			error("ERROR: Falsche RFC Version");
 			return (1);
@@ -216,6 +285,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
+
+
 	/* Initialisierung: Verbindungsaufbau, Threads starten usw... */
 
 	//preparation_showWindow();
@@ -223,7 +294,8 @@ int main(int argc, char **argv) {
 
 	/* Resourcen freigeben usw... */
 	guiDestroy();
-
+	}
+	close(sockfd);
 	return 0;
 }
 
