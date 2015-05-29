@@ -52,6 +52,8 @@ int main(int argc, char **argv) {
 	int long_index = 0; //Parameter für getopt
 
 	char *name = "unknown";
+	char username[31];
+	username[31] = '\0';
 	char *ipadresse = "localhost";
 	char *port = "54321";
 	int userNameIsSet = 0;
@@ -100,12 +102,11 @@ int main(int argc, char **argv) {
 		case 'n':
 			printf("LÄUFT --name\n\n");
 			userNameIsSet = 1;
-			name = optarg;
+			strncpy(username, optarg, 31);
 			/*if((strlen(name))>31){
 			 printf("Der gewaehlte Name ist zu lang! Max. 31 Zeichen erlaubt\n");
 			 exit(0);
 			 }*/
-
 			break;
 		case 'i':
 			printf("LÄUFT --ipadresse\n\n");
@@ -139,7 +140,7 @@ int main(int argc, char **argv) {
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	server = gethostbyname(ipadresse);
 	//bcopy(server->h_addr, &serv_addr.sin_addr, server->h_length);
-	bcopy((char*)server->h_addr, (char*) &serv_addr.sin_addr.s_addr, server->h_length);
+	bcopy((char*) server->h_addr, (char*) &serv_addr.sin_addr.s_addr, server->h_length);
 	serv_addr.sin_family = AF_INET; // IP Version 4
 	//serv_addr.sin_addr.s_addr = *ipadresse;
 	uint16_t final_port = atoi(port);
@@ -147,32 +148,29 @@ int main(int argc, char **argv) {
 
 	// Verbindung pruefen
 	printf("Verbindung wird aufgebaut...\n");
-	if (connect(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr))
-			< 0) {
+	if (connect(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
 		error("ERROR: Fehler beim Verbindungsaufbau client/main.c\n");
 	}
 	printf("Verbindung wurde aufgebaut\n");
 
 	// GUI initialisieren
 	/*guiInit(&argc, &argv);
-	preparation_setMode(PREPARATION_MODE_BUSY);
-	preparation_showWindow();
-*/
+	 preparation_setMode(PREPARATION_MODE_BUSY);
+	 preparation_showWindow();
+	 */
+
 	//Uebertragung LoginRequest
 	struct rfcLoginRequest lrq;
-	int nameLength = strlen(name);
+	int nameLength = strlen(username);
 	lrq.base.length = htons(nameLength + 1);
 	lrq.base.type = 1;
-	//memcpy(lrq.loginName, name, nameLength); // MEMCPY FUNKTIONIERT NICHT
-	//char test[31] = {'p','i'};
-	lrq.loginName[1] = 'p';
-	lrq.loginName[2] = 'i';
+	memcpy(lrq.loginName, username, nameLength);
 	lrq.rfcVersion = RFC_VERSION;
 	printf("Laenge des LRQ: %d\n", lrq.base.length);
 	printf("Login gesendet\n");
 
 	//An den Server senden
-	if (send(sockfd, &lrq, RFC_LRQ_SIZE + strlen(name), 0) == -1) {
+	if (send(sockfd, &lrq, RFC_LRQ_SIZE + strlen(username), 0) == -1) {
 		error("ERROR: Fehler bei Nachrichten uebertragung client/main.c\n");
 		return (1);
 	}
