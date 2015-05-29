@@ -96,13 +96,14 @@ int main(int argc, char **argv) {
 	int long_index = 0;
 	int c;
 	int sockfd, newsockfd, portno, n;
-	socklen_t cliLen;
-	struct sockaddr_in serverAddr, clientAddr; //Struktur enthält die Internet-Adresse des Servers und des Clients
+	//socklen_t cliLen;
+	struct sockaddr_in serverAddr; //clientAddr; //Struktur enthält die Internet-Adresse des Servers und des Clients
 
 	const char *port = "54321";
 
 	// Variable um Anzahl angemeldeter Spieler zu tracken
-	int playerCount = 0;
+	// Bisher nicht in Benutzung
+	// int playerCount = 0;
 
 	//PID Datei erzeugen
 	if (singleton(LOCKFILE) != 0) {
@@ -184,7 +185,7 @@ int main(int argc, char **argv) {
 
 	listen(sockfd, 5);
 
-	cliLen = sizeof(clientAddr);
+	//cliLen = sizeof(clientAddr);
 	newsockfd = accept(sockfd, NULL, NULL);
 	if (newsockfd < 0) {
 		error("FEHLER bei accept");
@@ -218,7 +219,6 @@ int main(int argc, char **argv) {
 		char s[length + 1];
 		s[length] = '\0';
 		memcpy(s, lrq.lrq.loginName, length);
-		printf("memcpy hat funktioniert\n");
 
 		printf("Spielername lautet %s\n", s);
 
