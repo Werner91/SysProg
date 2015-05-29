@@ -123,14 +123,15 @@ int main(int argc, char **argv) {
 	printf("IP:%s\n", ipadresse);
 	printf("Port:%s\n", port);
 
-	//Ueberprüfen ob ein Username gesetzt wurde ansonsten Hilfe ausgeben
+	// Ueberpruefen ob ein Username gesetzt wurde ansonsten Hilfe ausgeben
 	if (userNameIsSet == 0) {
 		printf("Es wurde kein Name angegeben");
 		show_help();
 		exit(0);
 	}
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0); // Socket anlegen, Rueckgabe ist der Filedeskriptor
+	// Socket anlegen, Rueckgabe ist der Filedeskriptor
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sockfd < 0) {
 		error("ERROR: Socket-Erzeugung client/main.c\n");
@@ -139,12 +140,12 @@ int main(int argc, char **argv) {
 	// Server Adresse setzen
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	server = gethostbyname(ipadresse);
-	//bcopy(server->h_addr, &serv_addr.sin_addr, server->h_length);
 	bcopy((char*) server->h_addr, (char*) &serv_addr.sin_addr.s_addr, server->h_length);
-	serv_addr.sin_family = AF_INET; // IP Version 4
-	//serv_addr.sin_addr.s_addr = *ipadresse;
+	// IPv4
+	serv_addr.sin_family = AF_INET;
+	// Port setzen
 	uint16_t final_port = atoi(port);
-	serv_addr.sin_port = htons(final_port); // Port setzen
+	serv_addr.sin_port = htons(final_port);
 
 	// Verbindung pruefen
 	printf("Verbindung wird aufgebaut...\n");
@@ -159,7 +160,8 @@ int main(int argc, char **argv) {
 	 preparation_showWindow();
 	 */
 
-	//Uebertragung LoginRequest
+	// Uebertragung LoginRequest
+	// Paket vorbereiten
 	struct rfcLoginRequest lrq;
 	int nameLength = strlen(username);
 	lrq.base.length = htons(nameLength + 1);
@@ -169,7 +171,7 @@ int main(int argc, char **argv) {
 	printf("Laenge des LRQ: %d\n", lrq.base.length);
 	printf("Login gesendet\n");
 
-	//An den Server senden
+	// Eigentliche Uebertragung
 	if (send(sockfd, &lrq, RFC_LRQ_SIZE + strlen(username), 0) == -1) {
 		error("ERROR: Fehler bei Nachrichten uebertragung client/main.c\n");
 		return (1);
@@ -177,7 +179,7 @@ int main(int argc, char **argv) {
 
 	// BIS HIERHER LAEUFTS
 
-	//Antwort vom Server
+	// Antwort vom Server
 	listen(sockfd, 5);
 	int newsockfd = accept(sockfd, NULL, NULL);
 	if (newsockfd < 0) {
@@ -195,7 +197,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	//RFC Versions ueberprüfung
+	// RFCVersionskontrolle
 	if (typeControl(lok.base, 2)) {
 		if (lok.lok.rfcVersion != RFC_VERSION) {
 			error("ERROR: Falsche RFC Version");
@@ -206,7 +208,7 @@ int main(int argc, char **argv) {
 		clientID = lok.lok.clientID;
 		infoPrint("Ihre ClientID: %d", clientID);
 		printf("Vor dem AddPlayer der GUI");
-		preparation_addPlayer(name); //Name wird der GUI hinzugefügt
+		preparation_addPlayer(name); // Spielername in der GUI anzeigen
 		if (lok.lok.clientID == 0) {
 			preparation_setMode(PREPARATION_MODE_PRIVILEGED);
 		} else {
