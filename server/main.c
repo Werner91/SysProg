@@ -95,11 +95,12 @@ int main(int argc, char **argv) {
 	const char* short_options = "h:p:";
 	int long_index = 0;
 	int c;
-	int sockfd, newsockfd, portno, cliLen, n;
+	int sockfd, newsockfd, portno, n;
+	socklen_t cliLen;
 	char buffer[256]; //gelesene Character werden hier gespeichert (also die Nachricht)
 	struct sockaddr_in serverAddr, clientAddr; //Struktur enthält die Internet-Adresse des Servers und des Clients
 
-	char *standardPort = "54321";
+	const char *port = "54321";
 
 	// Variable um Anzahl angemeldeter Spieler zu tracken
 	int playerCount = 0;
@@ -138,6 +139,7 @@ int main(int argc, char **argv) {
 		case 'p':
 			if (optarg) {
 				printf("  --port: %s\n", optarg);
+				port = optarg;
 			}
 			break;
 
@@ -171,7 +173,7 @@ int main(int argc, char **argv) {
 	/*Buffer löschen*/
 	bzero((char *) &serverAddr, sizeof(serverAddr)); //Server Adresse auf 0.0.0.0 setzen
 
-	portno = atoi(standardPort); //String von der Konsole in Integer umwandeln
+	portno = atoi(port); //String von der Konsole in Integer umwandeln
 
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(portno); //Konvertiert Portnummer von host byte order in network byte order
@@ -184,14 +186,16 @@ int main(int argc, char **argv) {
 	listen(sockfd, 5);
 
 	cliLen = sizeof(clientAddr);
-	newsockfd = accept(sockfd, (struct sockaddr *) &clientAddr, &cliLen);
+	newsockfd = accept(sockfd, NULL, NULL);
 	if (newsockfd < 0) {
 		error("FEHLER bei accept");
 	}
 
 	// Warten auf LoginRequests
 	rfc lrq;
-	int receive = receiveMessage(sockfd, &lrq);
+	printf("Vor dem receive\n");
+	int receive = receiveMessage(newsockfd, &lrq);
+	printf("Nach dem receive I\n");
 	if (receive == -1) {
 		error("ERROR: Fehler beim Empfang eines LoginRequests server/main.c");
 		return 1;
@@ -199,31 +203,38 @@ int main(int argc, char **argv) {
 		error("ERROR: Verbindung fehlgeschlagen LoginRequest  server/main.c");
 		return 1;
 	}
+	printf("Laenge: %d\n", lrq.base.length);
+	printf("Typ: %d\n", lrq.base.type);
 
-	if (typeControl(lrq.base, 2)) {
+	printf("Nach dem receive II\n");
+
+	if (typeControl(lrq.base, 1)) {
 		if (lrq.lrq.rfcVersion != RFC_VERSION) {
 			error("ERROR: Falsche RFC Version");
 			return (1);
 		}
+		printf("Versionskontrolle hat funktioniert\n");
 
 		int length = ntohs(lrq.base.length) - 1;
 		char s[length + 1];
 		s[length] = '\0';
 		memcpy(s, lrq.lrq.loginName, length);
+		printf("memcpy hat funktioniert\n");
 
 		printf("Spielername lautet %s\n", s);
 
 		struct rfcLoginResponseOk lok;
 		lok.base.type = 2;
-		lok.base.length = htons(2);
-		lok.clientID = (uint8_t) 1;
+		lok.base.length = 2;
+		lok.clientID = 1;
 		lok.rfcVersion = 7;
 
+		printf("Vor dem zweiten Send\n");
 		if (send(sockfd, &lok, RFC_LOK_SIZE, 0) == -1) {
 		            errnoPrint("send");
 		            return 1;
 		        }
-
+		printf("Nach dem zweiten Send\n");
 	}
 
 	bzero(buffer, 256);

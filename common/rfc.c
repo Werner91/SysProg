@@ -52,9 +52,13 @@ int receiveMessage(int socket, rfc *packet) {
 // Rueckgabe 1 bei Uebereinstimmung des Type-Felds
 // Rueckgabe 0 bei falschem Type-Feld
 int typeControl(struct rfcBase base, uint8_t type) {
+	printf("rfcBase.type: %d\n", base.type);
+	printf("type: %d\n", type);
 	if (base.type == type) {
+		printf("Typfeld stimmt ueberein\n");
 		return 1;
 	} else {
+		printf("Typfeld stimmt nicht ueberein\n");
 		return 0;
 	}
 }
