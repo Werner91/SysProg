@@ -17,6 +17,8 @@
 #include <netdb.h>
 #include <getopt.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "common/rfc.h"
 
 void error(char *msg) {
@@ -43,10 +45,9 @@ int main(int argc, char **argv) {
 	guiInit(&argc, &argv);
 	infoPrint("Client Gruppe 4 (Stroh, Steinbinder, Strohm)");
 
-	int sockfd, portno, n; // Anlegen SocketFileDeskriptor, Portnummer
+	int sockfd; // Anlegen SocketFileDeskriptor, Portnummer
 	struct sockaddr_in serv_addr; // IP-Adress-Struktur
 	struct hostent *server;
-	char buffer[256]; // Pufferspeicher fuer eingelesene Nachricht
 	int c; //Parameter für getopt
 	int long_index = 0; //Parameter für getopt
 
