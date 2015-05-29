@@ -97,7 +97,6 @@ int main(int argc, char **argv) {
 	int c;
 	int sockfd, newsockfd, portno, n;
 	socklen_t cliLen;
-	char buffer[256]; //gelesene Character werden hier gespeichert (also die Nachricht)
 	struct sockaddr_in serverAddr, clientAddr; //Struktur enthält die Internet-Adresse des Servers und des Clients
 
 	const char *port = "54321";
@@ -237,15 +236,6 @@ int main(int argc, char **argv) {
 		printf("Nach dem zweiten Send\n");
 	}
 
-	bzero(buffer, 256);
-
-	n = read(newsockfd, buffer, 255);
-	if (n < 0) {
-		error("FEHLER beim lesen vom socket");
-	}
-
-	printf("\n\n");
-	printf("Nachricht: %s\n\n\n", buffer);
 
 	n = write(newsockfd, "Ich hab deine Nachricht erhalten!", 33);
 	if (n < 0) {
