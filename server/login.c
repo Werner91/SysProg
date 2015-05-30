@@ -37,11 +37,11 @@ bool game_running = false;
 void* login_main(int server_socket){
 
 	int client_socket;
-	rfc lrq;
+	PACKET lrq;
 	int receive;
 	int client_id;
-	rfc response;
-	rfc lok;
+	PACKET response;
+	PACKET lok;
 
 	// Threadverwaltung - je Client ein Thread - Thread verwaltet Spielphase
 		pthread_t client_threads[MAX_PLAYERS];
@@ -85,7 +85,7 @@ void* login_main(int server_socket){
 					if(game_running == false){
 						// fuege Spieler zur Verwaltung hinzu, uebergebe Name + Socketdeskriptor
 						lock_user_mutex();
-						client_id = addPlayer(lrq.lrq.loginName, ntohs(lrq.lrq.base.length), client_socket);
+						client_id = addPlayer(lrq.content.lrq.loginName, ntohs(lrq.header.length), client_socket);
 						unlock_user_mutex();
 
 						//Name bereits vorhanden
@@ -101,10 +101,10 @@ void* login_main(int server_socket){
 						//ID ok
 						}else{
 							infoPrint("Spieler erfolgreich hinzugefuegt - Client_ID: %i", client_id);
-							response.lok.base.type = RFC_LOGINRESPONSEOK;
-							response.lok.base.length = htons(2);
-							response.lok.clientID = client_id;
-							response.lok.rfcVersion = RFC_VERSION;
+							response.header.type = RFC_LOGINRESPONSEOK;
+							response.header.length = htons(2);
+							response.content.lok.clientID = client_id;
+							response.content.lok.rfcVersion = RFC_VERSION;
 						}
 
 						//sofern Anmeldung ok - erstelle Clientthread fuer neu hinzugefuegten Spieler
@@ -120,13 +120,13 @@ void* login_main(int server_socket){
 
 						//sende Antwort
 							// sende Daten ueber Socket
-							if(send(client_socket, &response, ntohs(response.base.length)+3,0) == -1){
+							if(send(client_socket, &response, ntohs(response.header.length)+3,0) == -1){
 								errorPrint("Senden der Daten fehlgeschlagen!");
 								exit(0);
 							}
 							else {
 								// Testweise ausgeben welcher Typ an welchen Socket versendet wurde
-								infoPrint("Nachicht vom Type %d an die Socket-ID: %i gesendet ", response.lok.base.type, client_socket);
+								infoPrint("Nachicht vom Type %d an die Socket-ID: %i gesendet ", response.header.type, client_socket);
 							}
 
 						}

@@ -32,11 +32,6 @@
 #define RFC_PLAYERLIST							6 // Liste der Spielteilnehmer, wird versendet bei: An-/Abmeldung, Spielstart und Aenderung des Punktestandes
 
 
-// Basis-Struktur der RFC
-struct rfcBase {
-	uint8_t type;
-	uint16_t length;
-};
 
 // LRQ LoginRequest Struktur
 // Type = 1
@@ -45,7 +40,6 @@ struct rfcBase {
 // Login-Name, UTF-8, nicht nullterminiert, maximal 31 Bytes
 #define RFC_LRQ_SIZE (RFC_BASE_SIZE + 1)
 struct rfcLoginRequest {
-	struct rfcBase base;
 	uint8_t rfcVersion;
 	char loginName[31];
 };
@@ -57,16 +51,33 @@ struct rfcLoginRequest {
 // ClientID = 0 (0 := Spielleiter)
 #define RFC_LOK_SIZE (RFC_BASE_SIZE + 2)
 struct rfcLoginResponseOk {
-	struct rfcBase base;
 	uint8_t rfcVersion;
 	uint8_t clientID;
 };
 
+//Anfang der Protokolle
 typedef union {
-	struct rfcBase base;
 	struct rfcLoginRequest lrq;
 	struct rfcLoginResponseOk lok;
-} rfc;
+}CONTENT;
+
+
+// Header der pakete
+typedef struct rfcHeader {
+	uint8_t type;
+	uint16_t length;
+}HEADER;
+
+
+//komplette Struktur der Protokolle
+typedef struct{
+	HEADER header;
+	CONTENT content;
+}PACKET;
+
+
+
+
 
 // Ende Pragma Block
 #pragma pack(pop)
@@ -76,9 +87,9 @@ typedef union {
 /* *********************************************** */
 
 // KontrollFunktion um Paketempfang zu ueberpruefen
-int receiveMessage(int socket, rfc *packet);
+int receiveMessage(int socket, PACKET *packet);
 
 // KontrollFunktion fuer das Type-Feld des jeweiligen Datenpakets
-int typeControl(struct rfcBase base, uint8_t type);
+int typeControl(struct rfcHeader header, uint8_t type);
 
 #endif

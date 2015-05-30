@@ -88,13 +88,13 @@ void sende_login_request(char* _name, int _socketDeskriptor){
 
 	// Uebertragung LoginRequest
 	// Paket vorbereiten
-	struct rfcLoginRequest lrq;
+	PACKET lrq;
 	int nameLength = strlen(_name);
-	lrq.base.length = htons(nameLength + 1);
-	lrq.base.type = 1;
-	memcpy(lrq.loginName, _name, nameLength);
-	lrq.rfcVersion = RFC_VERSION;
-	printf("Laenge des LRQ: %d\n", lrq.base.length);
+	lrq.header.length = htons(nameLength + 1);
+	lrq.header.type = RFC_LOGINREQUEST;
+	memcpy(lrq.content.lrq.loginName, _name, nameLength);
+	lrq.content.lrq.rfcVersion = RFC_VERSION;
+	printf("Laenge des LRQ: %d\n", lrq.header.length);
 	printf("Login gesendet\n");
 
 	// Eigentliche Uebertragung
@@ -253,8 +253,8 @@ int main(int argc, char **argv) {
 
 
 
-	rfc lok;
-	lok.lok.base.type = htons(2);
+	PACKET lok;
+	lok.header.type = htons(2);
 	int receive = receiveMessage(sockfd, &lok);
 
 	if (receive == -1) {
@@ -267,18 +267,18 @@ int main(int argc, char **argv) {
 
 	// RFCVersionskontrolle
 	//if (typeControl(lok.base, 2))
-	if (typeControl(lok.lok.base, 2)) {
-		if (lok.lok.rfcVersion != RFC_VERSION) {
+	if (typeControl(lok.header, 2)) {
+		if (lok.content.lok.rfcVersion != RFC_VERSION) {
 			error("ERROR: Falsche RFC Version");
 			return (1);
 		}
 
 		// Speichere zugewiesene clientID
-		clientID = lok.lok.clientID;
+		clientID = lok.content.lok.clientID;
 		infoPrint("Ihre ClientID: %d", clientID);
 		printf("Vor dem AddPlayer der GUI");
 		preparation_addPlayer(name); // Spielername in der GUI anzeigen
-		if (lok.lok.clientID == 0) {
+		if (lok.content.lok.clientID == 0) {
 			preparation_setMode(PREPARATION_MODE_PRIVILEGED);
 		} else {
 			preparation_setMode(PREPARATION_MODE_NORMAL);

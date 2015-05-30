@@ -17,7 +17,7 @@
 // Rueckgabe -1 bei Fehler Paketempfang
 // Rueckgabe  0 falls kein Paket verfuegbar bzw Verbindung unterbrochen
 // Rueckgabe  1 falls Paketuebertragung erfolgreich war
-int receiveMessage(int socket, rfc *packet) {
+int receiveMessage(int socket, PACKET *packet) {
 	void* packetbuffer = packet;
 	// recv - receive a message from a connected socket
 	// recv(int socket, void *buffer, size_t length, int flags);
@@ -31,7 +31,7 @@ int receiveMessage(int socket, rfc *packet) {
 		return 0;
 	}
 
-	int packetLength = ntohs(packet->base.length);
+	int packetLength = ntohs(packet->header.length);
 
 	if (packetLength > 0) {
 		receivePacket = recv(socket, packetbuffer + RFC_BASE_SIZE, packetLength, 0);
@@ -51,10 +51,10 @@ int receiveMessage(int socket, rfc *packet) {
 // KontrollFunktion fuer das Type-Feld des jeweiligen Datenpakets
 // Rueckgabe 1 bei Uebereinstimmung des Type-Felds
 // Rueckgabe 0 bei falschem Type-Feld
-int typeControl(struct rfcBase base, uint8_t type) {
-	printf("rfcBase.type: %d\n", base.type);
+int typeControl(struct rfcHeader header, uint8_t type) {
+	printf("rfcHeader.type: %d\n", header.type);
 	printf("type: %d\n", type);
-	if (base.type == type) {
+	if (header.type == type) {
 		printf("Typfeld stimmt ueberein\n");
 		return 1;
 	} else {
